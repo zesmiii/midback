@@ -77,10 +77,30 @@ async function startServer() {
       execute,
       subscribe,
       onConnect: async (connectionParams: any, webSocket: any) => {
-        // Извлекаем токен из connectionParams
-        const token = connectionParams?.authorization?.replace('Bearer ', '') || 
-                     connectionParams?.token ||
-                     connectionParams?.Authorization?.replace('Bearer ', '');
+        // Логируем connectionParams для отладки (без токена)
+        console.log('WebSocket connection attempt, connectionParams keys:', Object.keys(connectionParams || {}));
+        
+        // Извлекаем токен из connectionParams (поддерживаем разные форматы)
+        let token: string | null = null;
+        
+        if (connectionParams) {
+          // Формат 1: { authorization: "Bearer <token>" }
+          if (connectionParams.authorization) {
+            token = typeof connectionParams.authorization === 'string' 
+              ? connectionParams.authorization.replace(/^Bearer\s+/i, '')
+              : null;
+          }
+          // Формат 2: { Authorization: "Bearer <token>" }
+          else if (connectionParams.Authorization) {
+            token = typeof connectionParams.Authorization === 'string'
+              ? connectionParams.Authorization.replace(/^Bearer\s+/i, '')
+              : null;
+          }
+          // Формат 3: { token: "<token>" }
+          else if (connectionParams.token) {
+            token = typeof connectionParams.token === 'string' ? connectionParams.token : null;
+          }
+        }
         
         if (token) {
           try {
