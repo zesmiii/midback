@@ -54,7 +54,6 @@ async function startServer() {
     schema,
     context: createContext,
     introspection: true,
-    playground: true,
     plugins: [
       {
         async serverWillStart() {
@@ -69,7 +68,7 @@ async function startServer() {
   });
 
   await apolloServer.start();
-  apolloServer.applyMiddleware({ app, path: '/graphql', cors: false });
+  apolloServer.applyMiddleware({ app: app as any, path: '/graphql', cors: false });
 
   // Настраиваем Subscription Server для WebSocket
   const subscriptionServer = SubscriptionServer.create(

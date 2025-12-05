@@ -10,25 +10,29 @@ router.post(
   '/image',
   authMiddleware,
   upload.single('image'),
-  (req: AuthRequest, res: Response) => {
+  (req: AuthRequest, res: Response): void => {
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      res.status(400).json({ error: 'No file uploaded' });
+      return;
     }
 
     // Возвращаем URL изображения
     const imageUrl = `/uploads/${req.file.filename}`;
     res.json({ imageUrl });
   },
-  (error: any, req: Request, res: Response, next: express.NextFunction) => {
+  (error: any, req: Request, res: Response, next: express.NextFunction): void => {
     // Обработка ошибок multer
     if (error) {
       if (error.message === 'Only .png, .jpg, .jpeg, .webp images are allowed') {
-        return res.status(400).json({ error: error.message });
+        res.status(400).json({ error: error.message });
+        return;
       }
       if (error.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'File size too large' });
+        res.status(400).json({ error: 'File size too large' });
+        return;
       }
-      return res.status(400).json({ error: error.message || 'File upload error' });
+      res.status(400).json({ error: error.message || 'File upload error' });
+      return;
     }
     next();
   }
