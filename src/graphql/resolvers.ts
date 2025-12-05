@@ -23,6 +23,76 @@ const getUserIdFromContext = (context: Context): string => {
 };
 
 export const resolvers = {
+  // Resolvers для маппинга _id -> id и преобразования дат
+  User: {
+    id: (parent: any) => {
+      if (parent._id) {
+        return parent._id.toString ? parent._id.toString() : String(parent._id);
+      }
+      if (parent.id) {
+        return parent.id.toString ? parent.id.toString() : String(parent.id);
+      }
+      return null;
+    },
+    createdAt: (parent: any) => {
+      if (!parent.createdAt) return null;
+      return parent.createdAt instanceof Date 
+        ? parent.createdAt.toISOString() 
+        : new Date(parent.createdAt).toISOString();
+    },
+    updatedAt: (parent: any) => {
+      if (!parent.updatedAt) return null;
+      return parent.updatedAt instanceof Date 
+        ? parent.updatedAt.toISOString() 
+        : new Date(parent.updatedAt).toISOString();
+    },
+  },
+  Chat: {
+    id: (parent: any) => {
+      if (parent._id) {
+        return parent._id.toString ? parent._id.toString() : String(parent._id);
+      }
+      if (parent.id) {
+        return parent.id.toString ? parent.id.toString() : String(parent.id);
+      }
+      return null;
+    },
+    createdAt: (parent: any) => {
+      if (!parent.createdAt) return null;
+      return parent.createdAt instanceof Date 
+        ? parent.createdAt.toISOString() 
+        : new Date(parent.createdAt).toISOString();
+    },
+    updatedAt: (parent: any) => {
+      if (!parent.updatedAt) return null;
+      return parent.updatedAt instanceof Date 
+        ? parent.updatedAt.toISOString() 
+        : new Date(parent.updatedAt).toISOString();
+    },
+  },
+  Message: {
+    id: (parent: any) => {
+      if (parent._id) {
+        return parent._id.toString ? parent._id.toString() : String(parent._id);
+      }
+      if (parent.id) {
+        return parent.id.toString ? parent.id.toString() : String(parent.id);
+      }
+      return null;
+    },
+    createdAt: (parent: any) => {
+      if (!parent.createdAt) return null;
+      return parent.createdAt instanceof Date 
+        ? parent.createdAt.toISOString() 
+        : new Date(parent.createdAt).toISOString();
+    },
+    updatedAt: (parent: any) => {
+      if (!parent.updatedAt) return null;
+      return parent.updatedAt instanceof Date 
+        ? parent.updatedAt.toISOString() 
+        : new Date(parent.updatedAt).toISOString();
+    },
+  },
   Query: {
     me: async (_: any, __: any, context: Context) => {
       const userId = getUserIdFromContext(context);
