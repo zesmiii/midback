@@ -26,7 +26,10 @@ async function startServer() {
   const app = express();
 
   // Middleware
-  app.use(cors());
+  app.use(cors({
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: true,
+  }));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
@@ -34,7 +37,8 @@ async function startServer() {
   app.use('/api', uploadRoutes);
   
   // Статические файлы для загрузок
-  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+  const uploadsPath = path.join(__dirname, '../uploads');
+  app.use('/uploads', express.static(uploadsPath));
 
   // Создаем GraphQL схему
   const schema = makeExecutableSchema({
@@ -42,22 +46,33 @@ async function startServer() {
     resolvers,
   });
 
+  // Создаем HTTP сервер для WebSocket (до применения Apollo middleware)
+  const httpServer = createServer(app);
+
   // Создаем Apollo Server
   const apolloServer = new ApolloServer({
     schema,
     context: createContext,
     introspection: true,
     playground: true,
+    plugins: [
+      {
+        async serverWillStart() {
+          return {
+            async drainServer() {
+              subscriptionServer.close();
+            },
+          };
+        },
+      },
+    ],
   });
 
-  // Создаем HTTP сервер для WebSocket (до применения Apollo middleware)
-  const httpServer = createServer(app);
-
   await apolloServer.start();
-  apolloServer.applyMiddleware({ app, path: '/graphql' });
+  apolloServer.applyMiddleware({ app, path: '/graphql', cors: false });
 
   // Настраиваем Subscription Server для WebSocket
-  SubscriptionServer.create(
+  const subscriptionServer = SubscriptionServer.create(
     {
       schema,
       execute,
@@ -76,19 +91,30 @@ async function startServer() {
               userEmail: payload.email,
             };
             console.log(`WebSocket connected: user ${payload.userId}`);
+            // Сохраняем контекст в webSocket для использования в onOperation
+            webSocket.context = context;
             return context;
           } catch (error) {
             console.error('WebSocket authentication error:', error);
             // Возвращаем пустой контекст, если токен невалидный
+            webSocket.context = {};
             return {};
           }
         }
         
         console.log('WebSocket connected without authentication');
+        webSocket.context = {};
         return {};
       },
       onDisconnect: () => {
         console.log('WebSocket client disconnected');
+      },
+      onOperation: async (message: any, params: any, webSocket: any) => {
+        // Передаем контекст из onConnect в параметры операции
+        if (webSocket.context) {
+          params.context = webSocket.context;
+        }
+        return params;
       },
     },
     {
@@ -101,6 +127,7 @@ async function startServer() {
   httpServer.listen(PORT, () => {
     console.log(`🚀 Server ready at http://localhost:${PORT}${apolloServer.graphqlPath}`);
     console.log(`📡 Subscriptions ready at ws://localhost:${PORT}${apolloServer.graphqlPath}`);
+    console.log(`📁 Uploads directory: ${uploadsPath}`);
   });
 }
 

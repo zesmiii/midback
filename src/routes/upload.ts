@@ -18,10 +18,21 @@ router.post(
     // Возвращаем URL изображения
     const imageUrl = `/uploads/${req.file.filename}`;
     res.json({ imageUrl });
+  },
+  (error: any, req: Request, res: Response, next: express.NextFunction) => {
+    // Обработка ошибок multer
+    if (error) {
+      if (error.message === 'Only .png, .jpg, .jpeg, .webp images are allowed') {
+        return res.status(400).json({ error: error.message });
+      }
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'File size too large' });
+      }
+      return res.status(400).json({ error: error.message || 'File upload error' });
+    }
+    next();
   }
 );
-
-// Роут для статических файлов (изображения) - будет настроен в server.ts
 
 export default router;
 
